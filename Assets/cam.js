@@ -1,7 +1,7 @@
 ﻿#pragma strict
 
-var IDEAL_WIDTH = 320;
-var IDEAL_HEIGHT = 240;
+var IDEAL_WIDTH = 640;
+var IDEAL_HEIGHT = 480;
 
 var webcamTexture : WebCamTexture;
 var currentFrame : Color[];
@@ -17,50 +17,54 @@ function Start () {
 
 function Update () {	
 	if (!webcamTexture.didUpdateThisFrame) {
+		Debug.Log('webcam did not update this frame');
 		return;
 	}
-	
+		
 	frameCount += 1;
 	
 	currentFrame = webcamTexture.GetPixels();
+	
+	Debug.Log('Just got the pixel data');
 	
 	Debug.Log('current frame length: ' + currentFrame.length);
 	if (!firstFrame) {
 		Debug.Log('last frame length: ' + lastFrame.length);
 	}
 	
-	if (firstFrame || lastFrame.length != currentFrame.length || frameCount % 4 != 0) {
+	if (firstFrame || lastFrame.length != currentFrame.length) {
 		firstFrame = false;
-		lastFrame = currentFrame;
 		
-		Debug.Log('not gonna do this frame!!');
+		Debug.Log('not gonna do this frame!!');		
+	} else {
+		Debug.Log('doing this frame!');
+	
+		var diff = DiffFrame(currentFrame, lastFrame);
+	
+		Debug.Log('Made the diff');
 		
-		return;
+		var cvResult = FindEyes(diff, webcamTexture.width, webcamTexture.height);
+	
+		Debug.Log('Got the result');
+		
+		Debug.Log(cvResult);	
 	}
-	
-	Debug.Log('doing this frame!');
-	
-	var diff = DiffFrame(currentFrame, lastFrame);
-	
-	Debug.Log('Made the diff');
-		
-	var cvResult = FindEyes(diff, webcamTexture.width, webcamTexture.height);
-	
-	Debug.Log('Got the result');
-		
-	Debug.Log(cvResult);
 	
 	lastFrame = currentFrame;
 }
 
 function DiffFrame(frame1 : Color[], frame2 : Color[]) {
-	var minLength = (frame1.Length > frame2.Length)? frame2.Length : frame1.length;
+	Debug.Log('calculating diff!');
+	
+	var minLength = (frame1.length > frame2.length)? frame2.length : frame1.length;
+	
+	Debug.Log('min length for diff: ' + minLength);
 
 	var newFrame = new int[minLength];
 	
-    for (var i = 0; i < minLength; i++) {
-      var color1 : Color = frame1[i];
-      var color2 : Color = frame2[i];
+    for (var i = 0; i < minLength; i += 1) {
+      var color1 = frame1[i];
+      var color2 = frame2[i];
       var avgDiff = (Mathf.Abs(color1.r - color2.r) + 
                      Mathf.Abs(color1.g - color2.g) +
                      Mathf.Abs(color1.b - color2.b)) / 3;
@@ -72,7 +76,7 @@ function DiffFrame(frame1 : Color[], frame2 : Color[]) {
   		  newFrame[i] = 255;
   	  }
     }
-
+    
     return newFrame;
 }
 
