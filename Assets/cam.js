@@ -1,5 +1,8 @@
 ﻿#pragma strict
 
+var IDEAL_WIDTH = 320;
+var IDEAL_HEIGHT = 240;
+
 var webcamTexture : WebCamTexture;
 var currentFrame : Color[];
 var lastFrame : Color[];
@@ -8,11 +11,15 @@ var frameCount = 0;
 
 function Start () {
 	// start the camera feed
-	webcamTexture = WebCamTexture();
+	webcamTexture = WebCamTexture(IDEAL_WIDTH, IDEAL_HEIGHT);
 	webcamTexture.Play();
 }
 
-function Update () {
+function Update () {	
+	if (!webcamTexture.didUpdateThisFrame) {
+		return;
+	}
+	
 	frameCount += 1;
 	
 	currentFrame = webcamTexture.GetPixels();
@@ -22,21 +29,28 @@ function Update () {
 		Debug.Log('last frame length: ' + lastFrame.length);
 	}
 	
-	if (firstFrame || lastFrame.length != currentFrame.length || frameCount % 10 != 0) {
+	if (firstFrame || lastFrame.length != currentFrame.length || frameCount % 4 != 0) {
 		firstFrame = false;
-		lastFrame = new Color[currentFrame.length];
-		System.Array.Copy(currentFrame, lastFrame, 1);
+		lastFrame = currentFrame;
+		
+		Debug.Log('not gonna do this frame!!');
+		
 		return;
 	}
 	
+	Debug.Log('doing this frame!');
+	
 	var diff = DiffFrame(currentFrame, lastFrame);
+	
+	Debug.Log('Made the diff');
 		
 	var cvResult = FindEyes(diff, webcamTexture.width, webcamTexture.height);
+	
+	Debug.Log('Got the result');
 		
 	Debug.Log(cvResult);
 	
-	lastFrame = new Color[currentFrame.length];
-	System.Array.Copy(currentFrame, lastFrame, 1);
+	lastFrame = currentFrame;
 }
 
 function DiffFrame(frame1 : Color[], frame2 : Color[]) {
