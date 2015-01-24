@@ -25,6 +25,7 @@ function Update () {
 		Debug.Log('webcam did not update this frame');
 		return;
 	}
+	
 			
 	Debug.Log('about to get pixel data!');
 	
@@ -43,28 +44,25 @@ function Update () {
 		Debug.Log('not gonna do this frame!!');		
 	} else {
 		Debug.Log('doing this frame!');
-	
+		
 		var diff = DiffFrame(currentFrame, lastFrame);
 	
 		Debug.Log('Made the diff');
 		
+		/*
 		var cvResult = FindEyes(diff, webcamTexture.width, webcamTexture.height);
 	
 		Debug.Log('Got the result');
-		
-		Debug.Log(cvResult);	
+		/*
+		Debug.Log(cvResult);*/
 	}
 	
 	lastFrame = currentFrame;
 }
 
 function DiffFrame(frame1 : Color[], frame2 : Color[]) {
-	Debug.Log('calculating diff!');
-	
 	var minLength = (frame1.length > frame2.length)? frame2.length : frame1.length;
 	
-	Debug.Log('min length for diff: ' + minLength);
-
 	var newFrame = new int[minLength];
 	
     for (var i = 0; i < minLength; i += 1) {
@@ -175,7 +173,7 @@ function pixel(frame : int[], width : int, height : int, x : int, y : int) {
  }
  
  // Heuristic to trace the perimeter of a blob of pixels
-  function tracePerim(frame : int[], width : int, height : int, i : int, j : int) {
+ function tracePerim(frame : int[], width : int, height : int, i : int, j : int) {
     var x = i;
     var y = j + 1;
     var xmin = i;
@@ -291,9 +289,9 @@ function pixel(frame : int[], width : int, height : int, x : int, y : int) {
   	}
     
     return Range2d(xmin, ymin, xmax, ymax);
-  }
+}
   
-  class Range2d {
+class Range2d {
   	var xmin : int;
   	var ymin : int;
   	var xmax : int;
@@ -309,9 +307,9 @@ function pixel(frame : int[], width : int, height : int, x : int, y : int) {
   	function pad(x : int, y : int) {
   		return Range2d(this.xmin - x, this.ymin - y, this.xmax + x, this.ymax + y);
   	}
-  };
+}
   
-  class CVError {
+class CVError {
     var message : String;
     var code : int;
     
@@ -323,9 +321,9 @@ function pixel(frame : int[], width : int, height : int, x : int, y : int) {
     function ToString() {
     	return "error: " + this.message;
     }
-  }
+}
   
-  class EyePair {
+class EyePair {
   	var leftEye : Range2d;
   	var rightEye : Range2d;
   	
@@ -333,4 +331,4 @@ function pixel(frame : int[], width : int, height : int, x : int, y : int) {
   		this.leftEye = left;
   		this.rightEye = right;
   	}
-  }
+}
