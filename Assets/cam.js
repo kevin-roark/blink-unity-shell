@@ -13,15 +13,20 @@ function Start () {
 	// start the camera feed
 	webcamTexture = WebCamTexture(IDEAL_WIDTH, IDEAL_HEIGHT);
 	webcamTexture.Play();
+	
+	//renderer.material.mainTexture = webcamTexture;
 }
 
-function Update () {	
+function Update () {
+	Debug.Log('starting frame: ' + frameCount);
+	frameCount += 1;
+	
 	if (!webcamTexture.didUpdateThisFrame) {
 		Debug.Log('webcam did not update this frame');
 		return;
 	}
-		
-	frameCount += 1;
+			
+	Debug.Log('about to get pixel data!');
 	
 	currentFrame = webcamTexture.GetPixels();
 	
