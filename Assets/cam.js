@@ -2,6 +2,7 @@
 
 var IDEAL_WIDTH = 640;
 var IDEAL_HEIGHT = 480;
+var DIFF_THRESHOLD = 15.0f / 255.0f;
 
 var webcamTexture : WebCamTexture;
 var currentFrame : Color[];
@@ -25,18 +26,8 @@ function Update () {
 		Debug.Log('webcam did not update this frame');
 		return;
 	}
-	
-			
-	Debug.Log('about to get pixel data!');
-	
+		
 	currentFrame = webcamTexture.GetPixels();
-	
-	Debug.Log('Just got the pixel data');
-	
-	Debug.Log('current frame length: ' + currentFrame.length);
-	if (!firstFrame) {
-		Debug.Log('last frame length: ' + lastFrame.length);
-	}
 	
 	if (firstFrame || lastFrame.length != currentFrame.length) {
 		firstFrame = false;
@@ -49,12 +40,11 @@ function Update () {
 	
 		Debug.Log('Made the diff');
 		
-		/*
 		var cvResult = FindEyes(diff, webcamTexture.width, webcamTexture.height);
 	
 		Debug.Log('Got the result');
-		/*
-		Debug.Log(cvResult);*/
+		
+		Debug.Log(cvResult);
 	}
 	
 	lastFrame = currentFrame;
@@ -64,7 +54,7 @@ function DiffFrame(frame1 : Color[], frame2 : Color[]) {
 	var minLength = (frame1.length > frame2.length)? frame2.length : frame1.length;
 	
 	var newFrame = new int[minLength];
-	
+		
     for (var i = 0; i < minLength; i += 1) {
       var color1 = frame1[i];
       var color2 = frame2[i];
@@ -73,13 +63,13 @@ function DiffFrame(frame1 : Color[], frame2 : Color[]) {
                      Mathf.Abs(color1.b - color2.b)) / 3;
                                           
       // Threshold and invert
-      if (avgDiff > 15) {
+      if (avgDiff > DIFF_THRESHOLD) {
   	    newFrame[i] = 0;
   	  } else {
   		  newFrame[i] = 255;
   	  }
     }
-    
+        
     return newFrame;
 }
 
@@ -91,16 +81,16 @@ function FindEyes(frame : int[], width : int, height : int) {
   var MIN_HOR_EYE_SEP = 15;
   var MAX_HOR_EYE_SEP = 80;
   var MAX_VERT_EYE_SEP = 55;
-
+  
   // Find blobs
   var blobs = new Array();
-  for (var h = BLOBS_SEARCH_BORDER; h < height - BLOBS_SEARCH_BORDER; h++) {
+  for (var h = BLOBS_SEARCH_BORDER; h < height - BLOBS_SEARCH_BORDER; h += 1) {
 	if (blobs.length >= MAX_BLOBS_TO_FIND) break;
 
-  	for (var j = BLOBS_SEARCH_BORDER; j < width - BLOBS_SEARCH_BORDER; j++) {
+  	for (var j = BLOBS_SEARCH_BORDER; j < width - BLOBS_SEARCH_BORDER; j += 1) {
   	  if (pixel(frame, width, height, j, h) == 0 && pixel(frame, width, height, j, h-1) != 0) {
         var pos : Range2d = tracePerim(frame, width, height, j, h);
-
+		
   	    if ((pos.xmax - pos.xmin) * (pos.ymax - pos.ymin) > 5) {
   		    blobs.Add(pos);
   		    if (blobs.length >= MAX_BLOBS_TO_FIND) break;
@@ -108,6 +98,8 @@ function FindEyes(frame : int[], width : int, height : int) {
   	  }
   	}
   }
+  
+  return CVError("Debug error blob length: " + blobs.length, 4);
 
   // Sort blobs
   if (blobs.length < MIN_BLOBS_FOUND) {
@@ -165,9 +157,6 @@ function pixel(frame : int[], width : int, height : int, x : int, y : int) {
   	if (x < 0 || x >= width || y < 0 || y >= height) {
   	  return 255;
   	}
-  	
-  	Debug.Log('frame legth: ' + frame.length);
-  	Debug.Log('x: ' + x + ' / y: ' + y + ' / width: ' + width);
   	
     return frame[x + y * width];
  }
