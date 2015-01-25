@@ -3,15 +3,19 @@
 var IDEAL_WIDTH = 640;
 var IDEAL_HEIGHT = 480;
 var DIFF_THRESHOLD = 15.0f / 255.0f;
+var LOG_ERRORS = false;
+var MIN_TIME_BETWEEN_BLINKS = 0.75;
 
 var webcamTexture : WebCamTexture;
 var currentFrame : Color[];
 var lastFrame : Color[];
 var firstFrame = true;
+var lastBlink = 0;
+
 var frameCount = 0;
+var blinkCount = 0;
 
 function Start () {
-	// start the camera feed
 	webcamTexture = WebCamTexture(IDEAL_WIDTH, IDEAL_HEIGHT);
 	webcamTexture.Play();
 	
@@ -19,32 +23,29 @@ function Start () {
 }
 
 function Update () {
-	Debug.Log('starting frame: ' + frameCount);
 	frameCount += 1;
 	
 	if (!webcamTexture.didUpdateThisFrame) {
-		Debug.Log('webcam did not update this frame');
 		return;
 	}
 		
 	currentFrame = webcamTexture.GetPixels();
-	
-	if (firstFrame || lastFrame.length != currentFrame.length) {
+		
+	if (firstFrame || lastFrame.length != currentFrame.length || Time.time - lastBlink < MIN_TIME_BETWEEN_BLINKS) {
 		firstFrame = false;
-		
-		Debug.Log('not gonna do this frame!!');		
-	} else {
-		Debug.Log('doing this frame!');
-		
+	} else {		
 		var diff = DiffFrame(currentFrame, lastFrame);
-	
-		Debug.Log('Made the diff');
-		
+			
 		var cvResult = FindEyes(diff, webcamTexture.width, webcamTexture.height);
-	
-		Debug.Log('Got the result');
-		
-		Debug.Log(cvResult);
+					
+		if (cvResult.GetType() == EyePair) {
+			blinkCount += 1;
+			//Debug.Log('found blink!: ' + blinkCount + ' at ' + Time.time);
+			Debug.Log('time diff: ' + (Time.time - lastBlink));
+			lastBlink = Time.time;
+		} else if (LOG_ERRORS) {
+			Debug.Log(cvResult);
+		}
 	}
 	
 	lastFrame = currentFrame;
@@ -76,12 +77,14 @@ function DiffFrame(frame1 : Color[], frame2 : Color[]) {
 function FindEyes(frame : int[], width : int, height : int) {
   var MAX_BLOBS_TO_FIND = 30;
   var BLOBS_SEARCH_BORDER = 20;
+  var BLOB_MIN_DIFFERENTIAL = 60;
   var MIN_BLOBS_FOUND = 2;
-  var MAX_BLOBS_FOUND = 25;
-  var MIN_HOR_EYE_SEP = 15;
-  var MAX_HOR_EYE_SEP = 80;
-  var MAX_VERT_EYE_SEP = 55;
-  
+  var MAX_BLOBS_FOUND = 30;
+  var MIN_HOR_EYE_SEP = 35;
+  var MAX_HOR_EYE_SEP = 170;
+  var MIN_VERT_EYE_SEP = 2;
+  var MAX_VERT_EYE_SEP = 40;
+    
   // Find blobs
   var blobs = new Array();
   for (var h = BLOBS_SEARCH_BORDER; h < height - BLOBS_SEARCH_BORDER; h += 1) {
@@ -90,8 +93,8 @@ function FindEyes(frame : int[], width : int, height : int) {
   	for (var j = BLOBS_SEARCH_BORDER; j < width - BLOBS_SEARCH_BORDER; j += 1) {
   	  if (pixel(frame, width, height, j, h) == 0 && pixel(frame, width, height, j, h-1) != 0) {
         var pos : Range2d = tracePerim(frame, width, height, j, h);
-		
-  	    if ((pos.xmax - pos.xmin) * (pos.ymax - pos.ymin) > 5) {
+        
+  	    if ((pos.xmax - pos.xmin) * (pos.ymax - pos.ymin) > BLOB_MIN_DIFFERENTIAL) {	
   		    blobs.Add(pos);
   		    if (blobs.length >= MAX_BLOBS_TO_FIND) break;
   		}
@@ -99,8 +102,6 @@ function FindEyes(frame : int[], width : int, height : int) {
   	}
   }
   
-  return CVError("Debug error blob length: " + blobs.length, 4);
-
   // Sort blobs
   if (blobs.length < MIN_BLOBS_FOUND) {
   	return CVError("Too few blobs: " + blobs.length, 1);
@@ -108,7 +109,7 @@ function FindEyes(frame : int[], width : int, height : int) {
     return CVError("Too many blobs: " + blobs.length, 2);
   }
   blobs.sort(function(a : Range2d, b : Range2d) {
-    (b.xmax - b.xmin) * (b.ymax - b.ymin) - (a.xmax - a.xmin) * (a.ymax - a.ymin);
+    return (b.xmax - b.xmin) * (b.ymax - b.ymin) - (a.xmax - a.xmin) * (a.ymax - a.ymin);
   });
 
   // prune duplicate blobs
@@ -137,9 +138,11 @@ function FindEyes(frame : int[], width : int, height : int) {
   var xSep = Mathf.Abs((blob0.xmax + blob0.xmin) - (blob1.xmax + blob1.xmin)) / 2;
   var ySep = Mathf.Abs((blob0.ymax + blob0.ymin) - (blob1.ymax + blob1.ymin)) / 2;
 
-  if (xSep < MIN_HOR_EYE_SEP || xSep > MAX_HOR_EYE_SEP || ySep > MAX_VERT_EYE_SEP) {
+  if (xSep < MIN_HOR_EYE_SEP || xSep > MAX_HOR_EYE_SEP || ySep < MIN_VERT_EYE_SEP || ySep > MAX_VERT_EYE_SEP) {
 	return CVError("Geometry off, xSep:" + xSep + ", ySep:" + ySep, 3);
   }
+  
+  Debug.Log('xSep: ' + xSep + ' / ySep: ' + ySep);
 
   // Find which eye is which
   var l = (blob0.xmax < blob1.xmax)? 0 : 1;
@@ -273,8 +276,8 @@ function pixel(frame : int[], width : int, height : int, x : int, y : int) {
       
       xmin = Mathf.Min(x, xmin);
       ymin = Mathf.Min(y, ymin);
-  	  xmax = Mathf.Min(x, xmax);
-  	  ymax = Mathf.Min(y, ymax);
+  	  xmax = Mathf.Max(x, xmax);
+  	  ymax = Mathf.Max(y, ymax);
   	}
     
     return Range2d(xmin, ymin, xmax, ymax);
@@ -295,6 +298,10 @@ class Range2d {
   	
   	function pad(x : int, y : int) {
   		return Range2d(this.xmin - x, this.ymin - y, this.xmax + x, this.ymax + y);
+  	}
+  	
+  	function ToString() {
+  		return "x: (" + this.xmin + ", " + this.xmax + ") / y: (" + this.ymin + ", " + this.ymax + ")";
   	}
 }
   
@@ -319,5 +326,9 @@ class EyePair {
   	function EyePair(left : Range2d, right : Range2d) {
   		this.leftEye = left;
   		this.rightEye = right;
+  	}
+  	
+  	function ToString() {
+  		return "left: " + this.leftEye + " / right: " + this.rightEye;
   	}
 }
