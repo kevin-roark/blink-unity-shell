@@ -40,6 +40,7 @@ function Update () {
 					
 		if (cvResult.GetType() == EyePair) {
 			blinkCount += 1;
+			gameObject.SendMessage("blinkDown");
 			//Debug.Log('found blink!: ' + blinkCount + ' at ' + Time.time);
 			Debug.Log('time diff: ' + (Time.time - lastBlink));
 			lastBlink = Time.time;
