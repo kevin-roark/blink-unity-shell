@@ -4,7 +4,7 @@ var IDEAL_WIDTH = 640;
 var IDEAL_HEIGHT = 480;
 var DIFF_THRESHOLD = 15.0f / 255.0f;
 var LOG_ERRORS = false;
-var MIN_TIME_BETWEEN_BLINKS = 0.75;
+var MIN_TIME_BETWEEN_BLINKS = 0.2;
 
 var webcamTexture : WebCamTexture;
 var currentFrame : Color[];
@@ -76,15 +76,15 @@ function DiffFrame(frame1 : Color[], frame2 : Color[]) {
 }
 
 function FindEyes(frame : int[], width : int, height : int) {
-  var MAX_BLOBS_TO_FIND = 30;
-  var BLOBS_SEARCH_BORDER = 20;
-  var BLOB_MIN_DIFFERENTIAL = 60;
-  var MIN_BLOBS_FOUND = 2;
-  var MAX_BLOBS_FOUND = 30;
-  var MIN_HOR_EYE_SEP = 35;
-  var MAX_HOR_EYE_SEP = 170;
-  var MIN_VERT_EYE_SEP = 2;
-  var MAX_VERT_EYE_SEP = 40;
+  var MAX_BLOBS_TO_FIND = 12; // maximum number of blobs to loop through
+	var MAX_BLOBS_FOUND = 12; // if we find more blobs than this, the scene is too messy to analyze
+  var BLOBS_SEARCH_BORDER = 20; // start looking for blobs with some padding in the frame
+  var BLOB_MIN_DIFFERENTIAL = 60; // the minimum x <-> y differential for a perimeter to qualify as a blob
+  var MIN_BLOBS_FOUND = 2; // the minimum number of blobs needed to have two eyes
+  var MIN_HOR_EYE_SEP = 28; // minimum horizontal separation between eye blobs
+  var MAX_HOR_EYE_SEP = 175; // maximum horizontal separation between eye blobs
+  var MIN_VERT_EYE_SEP = 3; // minimum vertical separation between eye blobs
+  var MAX_VERT_EYE_SEP = 50; // maximum vertical separation between eye blobs
 
   // Find blobs
   var blobs = new Array();
