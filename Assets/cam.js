@@ -82,9 +82,9 @@ function FindEyes(frame : int[], width : int, height : int) {
   var BLOB_MIN_DIFFERENTIAL = 60; // the minimum x <-> y differential for a perimeter to qualify as a blob
   var MIN_BLOBS_FOUND = 2; // the minimum number of blobs needed to have two eyes
   var MIN_HOR_EYE_SEP = 28; // minimum horizontal separation between eye blobs
-  var MAX_HOR_EYE_SEP = 175; // maximum horizontal separation between eye blobs
-  var MIN_VERT_EYE_SEP = 3; // minimum vertical separation between eye blobs
-  var MAX_VERT_EYE_SEP = 50; // maximum vertical separation between eye blobs
+  var MAX_HOR_EYE_SEP = 190; // maximum horizontal separation between eye blobs
+  var MIN_VERT_EYE_SEP = 0; // minimum vertical separation between eye blobs
+  var MAX_VERT_EYE_SEP = 45; // maximum vertical separation between eye blobs
 
   // Find blobs
   var blobs = new Array();
@@ -103,7 +103,7 @@ function FindEyes(frame : int[], width : int, height : int) {
   	}
   }
 
-  // Sort blobs
+  // Sort blobs by size
   if (blobs.length < MIN_BLOBS_FOUND) {
   	return CVError("Too few blobs: " + blobs.length, 1);
   } else if (blobs.length > MAX_BLOBS_FOUND) {
